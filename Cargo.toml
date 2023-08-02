@@ -1,0 +1,15 @@
+[package]
+name = "buddy-link"
+description = "Library to interact with the BuddyLink on-chain referral system"
+version = "0.1.0"
+edition = "2021"
+
+[features]
+mainnet = []
+devnet = []
+
+[dependencies]
+anchor-lang = { version = "0.27.0" }
+anchor-spl = "0.27.0"
+solana-program = { version = "1.14.17" }
+borsh = "0.10.3"
