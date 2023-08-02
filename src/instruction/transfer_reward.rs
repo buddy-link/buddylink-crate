@@ -1,7 +1,8 @@
-use crate::constants::constants::BL_PROGRAM_ID;
+use crate::constants::BL_PROGRAM_ID;
 use borsh::{BorshDeserialize, BorshSerialize};
 use solana_program::instruction::{AccountMeta, Instruction};
 use solana_program::pubkey::Pubkey;
+use crate::utils::{get_account_meta_or_read_default, get_instruction_name_data};
 
 #[repr(C)]
 #[derive(BorshSerialize, BorshDeserialize, PartialEq, Eq, Debug, Clone)]
@@ -45,12 +46,15 @@ pub fn transfer_unchecked_local_shared_reward(
     remaining_accounts: &[Pubkey],
     transfer_args: &TransferUncheckedLocalSharedRewardArgs,
 ) -> Instruction {
+    let mut instruction_data = get_instruction_name_data("transfer_reward_unchecked_multiple");
+    instruction_data.extend_from_slice(&transfer_args.try_to_vec().unwrap());
+
     let mut accounts = vec![
         AccountMeta::new(authority, true),
         AccountMeta::new_readonly(system_program.unwrap_or(BL_PROGRAM_ID), false),
         AccountMeta::new_readonly(mint.unwrap_or(BL_PROGRAM_ID), false),
         AccountMeta::new_readonly(token_program.unwrap_or(BL_PROGRAM_ID), false),
-        AccountMeta::new(from_account.unwrap_or(BL_PROGRAM_ID), false),
+        get_account_meta_or_read_default(&from_account),
     ];
 
     accounts.extend_from_slice(
@@ -67,7 +71,7 @@ pub fn transfer_unchecked_local_shared_reward(
     Instruction {
         program_id: BL_PROGRAM_ID,
         accounts,
-        data: transfer_args.try_to_vec().unwrap(),
+        data: instruction_data,
     }
 }
 
@@ -107,6 +111,9 @@ pub fn transfer_secure_local_reward(
     referee_member: Pubkey,
     transfer_args: &GeneralTransferRewardArgs,
 ) -> Instruction {
+    let mut instruction_data = get_instruction_name_data("transfer_reward_secure_no_global");
+    instruction_data.extend_from_slice(&transfer_args.try_to_vec().unwrap());
+
     Instruction {
         program_id: BL_PROGRAM_ID,
         accounts: vec![
@@ -123,7 +130,7 @@ pub fn transfer_secure_local_reward(
             AccountMeta::new(referee_member, false),
             AccountMeta::new(referrer_token_account, false),
         ],
-        data: transfer_args.try_to_vec().unwrap(),
+        data: instruction_data,
     }
 }
 
@@ -158,22 +165,19 @@ pub fn transfer_checked_global_reward(
     referrer_treasury_for_reward: Pubkey,
     referee_member: Pubkey,
     buddy_global_referrer_treasury: Option<Pubkey>,
-    buddy_global_referrer_treasury_for_reward: Option<Pubkey>,
+    buddy_global_referrer_token_account: Option<Pubkey>,
     transfer_args: &GeneralTransferRewardArgs,
 ) -> Instruction {
+    let mut instruction_data = get_instruction_name_data("transfer_reward_spl");
+    instruction_data.extend_from_slice(&transfer_args.try_to_vec().unwrap());
+
     Instruction {
         program_id: BL_PROGRAM_ID,
         accounts: vec![
             AccountMeta::new(authority, true),
-            AccountMeta::new(
-                buddy_global_referrer_treasury.unwrap_or(BL_PROGRAM_ID),
-                false,
-            ),
-            AccountMeta::new(
-                buddy_global_referrer_treasury_for_reward.unwrap_or(BL_PROGRAM_ID),
-                false,
-            ),
-            AccountMeta::new(referrer_member.unwrap_or(BL_PROGRAM_ID), false),
+            get_account_meta_or_read_default(&buddy_global_referrer_treasury),
+            get_account_meta_or_read_default(&buddy_global_referrer_token_account),
+            get_account_meta_or_read_default(&referrer_member),
             AccountMeta::new(referrer_treasury, false),
             AccountMeta::new(referrer_treasury_for_reward, false),
             AccountMeta::new(referee_member, false),
@@ -182,7 +186,7 @@ pub fn transfer_checked_global_reward(
             AccountMeta::new(from_token_account, false),
             AccountMeta::new(referrer_token_account, false),
         ],
-        data: transfer_args.try_to_vec().unwrap(),
+        data: instruction_data,
     }
 }
 
@@ -219,20 +223,23 @@ pub fn transfer_checked_global_only_reward(
     referee_buddy: Pubkey,
     transfer_args: &GeneralTransferRewardArgs,
 ) -> Instruction {
+    let mut instruction_data = get_instruction_name_data("transfer_reward_global");
+    instruction_data.extend_from_slice(&transfer_args.try_to_vec().unwrap());
+
     Instruction {
         program_id: BL_PROGRAM_ID,
         accounts: vec![
             AccountMeta::new(authority, true),
             AccountMeta::new(buddy_global_referrer_treasury, false),
             AccountMeta::new(buddy_global_referrer_treasury_for_reward, false),
-            AccountMeta::new(referee_buddy_profile, false),
-            AccountMeta::new(referee_buddy, false),
+            AccountMeta::new_readonly(referee_buddy_profile, false),
+            AccountMeta::new_readonly(referee_buddy, false),
             AccountMeta::new_readonly(system_program.unwrap_or(BL_PROGRAM_ID), false),
             AccountMeta::new_readonly(mint.unwrap_or(BL_PROGRAM_ID), false),
             AccountMeta::new_readonly(token_program.unwrap_or(BL_PROGRAM_ID), false),
-            AccountMeta::new(referrer_token_account.unwrap_or(BL_PROGRAM_ID), false),
-            AccountMeta::new(from_token_account.unwrap_or(BL_PROGRAM_ID), false),
+            get_account_meta_or_read_default(&referrer_token_account),
+            get_account_meta_or_read_default(&from_token_account),
         ],
-        data: transfer_args.try_to_vec().unwrap(),
+        data: instruction_data,
     }
 }

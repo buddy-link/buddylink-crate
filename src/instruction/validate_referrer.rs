@@ -1,6 +1,7 @@
-use crate::constants::constants::BL_PROGRAM_ID;
+use crate::constants::BL_PROGRAM_ID;
 use solana_program::instruction::{AccountMeta, Instruction};
 use solana_program::pubkey::Pubkey;
+use crate::utils::get_instruction_name_data;
 
 ///# Validate Referrer
 ///
@@ -31,6 +32,8 @@ pub fn validate_referrer(
     referee_treasury: Pubkey,
     referee_member: Pubkey,
 ) -> Instruction {
+    let instruction_data = get_instruction_name_data("validate_referrer");
+
     let accounts = vec![
         AccountMeta::new(payer, true),
         AccountMeta::new_readonly(authority, false),
@@ -48,6 +51,6 @@ pub fn validate_referrer(
     Instruction {
         program_id: BL_PROGRAM_ID,
         accounts,
-        data: vec![],
+        data: instruction_data,
     }
 }

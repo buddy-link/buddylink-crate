@@ -1,0 +1,9 @@
+{
+  "scripts": {
+  },
+  "dependencies": {
+  },
+  "devDependencies": {
+    "@metaplex-foundation/amman": "^0.12.0"
+  }
+}

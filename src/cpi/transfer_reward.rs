@@ -1,10 +1,10 @@
-use crate::constants::constants::BL_PROGRAM_ID;
+use crate::constants::BL_PROGRAM_ID;
 use crate::instruction;
 use crate::instruction::{GeneralTransferRewardArgs, TransferUncheckedLocalSharedRewardArgs};
 use crate::utils::{get_account_info_or_default, get_key_or_none};
 use anchor_lang::prelude::*;
 use anchor_lang::{Accounts, Key, ToAccountInfo};
-use anchor_spl::token::{Mint, Token, TokenAccount};
+use anchor_spl::token::{Token};
 use solana_program::entrypoint::ProgramResult;
 use solana_program::program::invoke_signed;
 
@@ -12,31 +12,33 @@ use solana_program::program::invoke_signed;
 pub struct TransferRewardUncheckedMultiple<'info> {
     /// CHECK: The buddylink program
     #[account(executable, address = BL_PROGRAM_ID)]
-    pub buddy_link_program: UncheckedAccount<'info>,
+    pub buddy_link_program: AccountInfo<'info>,
 
-    /// Authority of the account sending the funds.
-    #[account(mut)]
-    pub authority: Signer<'info>,
+    /// CHECK: Authority of the account sending the funds.
+    #[account(mut, signer)]
+    pub authority: AccountInfo<'info>,
 
-    /// System Program
-    pub system_program: Option<Program<'info, System>>,
+    /// CHECK: System Program
+    #[account(executable, address = solana_program::system_program::ID)]
+    pub system_program: Option<AccountInfo<'info>>,
 
-    /// Mint
+    /// CHECK: Mint
     #[account()]
-    pub mint: Option<Account<'info, Mint>>,
-    /// Token program
-    pub token_program: Option<Program<'info, Token>>,
+    pub mint: Option<AccountInfo<'info>>,
+    /// CHECK: Token program
+    #[account(executable, address = Token::id())]
+    pub token_program: Option<AccountInfo<'info>>,
 
-    /// Account sending the funds.
+    /// CHECK: Account sending the funds.
     #[account(mut)]
-    pub from_token_account: Option<Account<'info, TokenAccount>>,
+    pub from_token_account: Option<AccountInfo<'info>>,
     /*
     Remaining accounts with be the referrer treasuries paired with referrer_member for sol or token accounts for spl
      */
 }
 
 pub fn transfer_unchecked_local_shared_reward<'info>(
-    ctx: Context<'_, '_, '_, 'info, TransferRewardUncheckedMultiple<'info>>,
+    ctx: CpiContext<'_, '_, '_, 'info, TransferRewardUncheckedMultiple<'info>>,
     total_amount: u64,
     shares_in_bps: Vec<u16>,
     members_included: bool,
@@ -71,7 +73,7 @@ pub fn transfer_unchecked_local_shared_reward<'info>(
         get_account_info_or_default(&ctx.accounts.from_token_account, &default_account_info),
     ];
 
-    account_infos.extend_from_slice(ctx.remaining_accounts);
+    account_infos.extend_from_slice(&ctx.remaining_accounts);
 
     invoke_signed(&instruction, &account_infos, transfer_signer_seeds)
 }
@@ -80,51 +82,52 @@ pub fn transfer_unchecked_local_shared_reward<'info>(
 pub struct TransferSecureLocalReward<'info> {
     /// CHECK: The buddylink program
     #[account(executable, address = BL_PROGRAM_ID)]
-    pub buddy_link_program: UncheckedAccount<'info>,
+    pub buddy_link_program: AccountInfo<'info>,
 
-    /// Authority of the account sending the funds.
-    #[account(mut)]
-    pub authority: Signer<'info>,
+    /// CHECK: Authority of the account sending the funds.
+    #[account(mut, signer)]
+    pub authority: AccountInfo<'info>,
 
-    /// Mint
+    /// CHECK: Mint
     #[account()]
-    pub mint: Account<'info, Mint>,
-    /// Token program
-    pub token_program: Program<'info, Token>,
+    pub mint: AccountInfo<'info>,
+    /// CHECK: Token program
+    #[account(executable, address = Token::id())]
+    pub token_program: AccountInfo<'info>,
 
-    /// Account sending the funds.
+    /// CHECK: Account sending the funds.
     #[account(mut)]
-    pub from_token_account: Account<'info, TokenAccount>,
-    /// Account receiving the funds (buddy link owned).
+    pub from_token_account: AccountInfo<'info>,
+    /// CHECK: Account receiving the funds (buddy link owned).
     #[account(mut)]
-    pub referrer_token_account: Account<'info, TokenAccount>,
+    pub referrer_token_account: AccountInfo<'info>,
 
     /// CHECK: Referrer member (account of the referrer within your organization).
     #[account(mut)]
-    pub referrer_member: UncheckedAccount<'info>,
+    pub referrer_member: AccountInfo<'info>,
     /// CHECK: Referrer treasury (treasury that owns the referrer member ).
     #[account(mut)]
-    pub referrer_treasury: UncheckedAccount<'info>,
+    pub referrer_treasury: AccountInfo<'info>,
     /// CHECK: Referrer treasury for reward (treasury that is linked to the current mint, could be the same as above).
     #[account(mut)]
-    pub referrer_treasury_for_reward: UncheckedAccount<'info>,
+    pub referrer_treasury_for_reward: AccountInfo<'info>,
 
     /// CHECK: Buddy Link Profile of the referee.
     #[account()]
-    pub referee_buddy_profile: UncheckedAccount<'info>,
+    pub referee_buddy_profile: AccountInfo<'info>,
     /// CHECK: Buddy Link Paid buddy of the referee (could be the same as above).
     #[account()]
-    pub referee_buddy: UncheckedAccount<'info>,
+    pub referee_buddy: AccountInfo<'info>,
     /// CHECK: Referee treasury (is owned by above).
     #[account(mut)]
-    pub referee_treasury: UncheckedAccount<'info>,
+    pub referee_treasury: AccountInfo<'info>,
     /// CHECK: Referee member (account of the referee within your organization).
     #[account(mut)]
-    pub referee_member: UncheckedAccount<'info>,
+    pub referee_member: AccountInfo<'info>,
 }
 
-pub fn transfer_secure_local_reward(
-    ctx: Context<TransferSecureLocalReward>,
+pub fn transfer_secure_local_reward<'info>(
+    ctx: CpiContext<'_, '_, '_, 'info, TransferSecureLocalReward<'info>>,
     amount: u64,
     transfer_signer_seeds: &[&[&[u8]]],
 ) -> ProgramResult {
@@ -168,49 +171,50 @@ pub fn transfer_secure_local_reward(
 pub struct TransferCheckedGlobalReward<'info> {
     /// CHECK: The buddylink program
     #[account(executable, address = BL_PROGRAM_ID)]
-    pub buddy_link_program: UncheckedAccount<'info>,
+    pub buddy_link_program: AccountInfo<'info>,
 
-    /// Authority of the account sending the funds.
-    #[account(mut)]
-    pub authority: Signer<'info>,
+    /// CHECK: Authority of the account sending the funds.
+    #[account(mut, signer)]
+    pub authority: AccountInfo<'info>,
 
-    /// Mint
+    /// CHECK: Mint
     #[account()]
-    pub mint: Account<'info, Mint>,
-    /// Token program
-    pub token_program: Program<'info, Token>,
+    pub mint: AccountInfo<'info>,
+    /// CHECK: Token program
+    #[account(executable, address = Token::id())]
+    pub token_program: AccountInfo<'info>,
 
-    /// Account sending the funds.
+    /// CHECK: Account sending the funds.
     #[account(mut)]
-    pub from_token_account: Account<'info, TokenAccount>,
-    /// Account receiving the funds (buddy link owned).
+    pub from_token_account: AccountInfo<'info>,
+    /// CHECK: Account receiving the funds (buddy link owned).
     #[account(mut)]
-    pub referrer_token_account: Account<'info, TokenAccount>,
+    pub referrer_token_account: AccountInfo<'info>,
 
     /// CHECK: Referrer member (account of the referrer within your organization) (None if don't want on-chain analytics).
     #[account(mut)]
-    pub referrer_member: Option<UncheckedAccount<'info>>,
+    pub referrer_member: Option<AccountInfo<'info>>,
     /// CHECK: Referrer treasury (treasury that owns the referrer member ).
     #[account(mut)]
-    pub referrer_treasury: UncheckedAccount<'info>,
+    pub referrer_treasury: AccountInfo<'info>,
     /// CHECK: Referrer treasury for reward (treasury that is linked to the current mint, could be the same as above).
     #[account(mut)]
-    pub referrer_treasury_for_reward: UncheckedAccount<'info>,
+    pub referrer_treasury_for_reward: AccountInfo<'info>,
 
     /// CHECK: Referee member (account of the referee within your organization).
     #[account(mut)]
-    pub referee_member: UncheckedAccount<'info>,
+    pub referee_member: AccountInfo<'info>,
 
     /// CHECK: Global referrer treasury (treasury of the global referrer of current referee) (None if user doesn't have global referrer).
     #[account(mut)]
-    pub buddy_global_referrer_treasury: Option<UncheckedAccount<'info>>,
-    /// CHECK: Global referrer treasury for reward (treasury of the global referrer of current referee that is linked to the current mint, could be same as above) (None if user doesn't have global referrer).
+    pub buddy_global_referrer_treasury: Option<AccountInfo<'info>>,
+    /// CHECK: Global referrer token account linked to the above account.
     #[account(mut)]
-    pub buddy_global_referrer_treasury_for_reward: Option<UncheckedAccount<'info>>,
+    pub buddy_global_referrer_token_account: Option<AccountInfo<'info>>,
 }
 
-pub fn transfer_checked_global_reward(
-    ctx: Context<TransferCheckedGlobalReward>,
+pub fn transfer_checked_global_reward<'info>(
+    ctx: CpiContext<'_, '_, '_, 'info, TransferCheckedGlobalReward<'info>>,
     amount: u64,
     transfer_signer_seeds: &[&[&[u8]]],
 ) -> ProgramResult {
@@ -225,7 +229,7 @@ pub fn transfer_checked_global_reward(
         ctx.accounts.referrer_treasury_for_reward.key(),
         ctx.accounts.referee_member.key(),
         get_key_or_none(&ctx.accounts.buddy_global_referrer_treasury),
-        get_key_or_none(&ctx.accounts.buddy_global_referrer_treasury_for_reward),
+        get_key_or_none(&ctx.accounts.buddy_global_referrer_token_account),
         &GeneralTransferRewardArgs { amount },
     );
 
@@ -240,7 +244,7 @@ pub fn transfer_checked_global_reward(
                 &default_account_info,
             ),
             get_account_info_or_default(
-                &ctx.accounts.buddy_global_referrer_treasury_for_reward,
+                &ctx.accounts.buddy_global_referrer_token_account,
                 &default_account_info,
             ),
             ctx.accounts.referee_member.to_account_info(),
@@ -260,45 +264,47 @@ pub fn transfer_checked_global_reward(
 pub struct TransferCheckedGlobalOnlyReward<'info> {
     /// CHECK: The buddylink program
     #[account(executable, address = BL_PROGRAM_ID)]
-    pub buddy_link_program: UncheckedAccount<'info>,
+    pub buddy_link_program: AccountInfo<'info>,
 
-    /// Authority of the account sending the funds.
-    #[account(mut)]
-    pub authority: Signer<'info>,
+    /// CHECK: Authority of the account sending the funds.
+    #[account(mut, signer)]
+    pub authority: AccountInfo<'info>,
 
-    /// System Program - Only used if sending SOL, None if sending SPL.
-    pub system_program: Option<Program<'info, System>>,
+    /// CHECK: System Program - Only used if sending SOL, None if sending SPL.
+    #[account(executable, address = solana_program::system_program::ID)]
+    pub system_program: Option<AccountInfo<'info>>,
 
-    /// Mint, None if sending SOL.
+    /// CHECK: Mint, None if sending SOL.
     #[account()]
-    pub mint: Option<Account<'info, Mint>>,
-    /// Token program, None if sending SOL.
-    pub token_program: Option<Program<'info, Token>>,
+    pub mint: Option<AccountInfo<'info>>,
+    /// CHECK: Token program, None if sending SOL.
+    #[account(executable, address = Token::id())]
+    pub token_program: Option<AccountInfo<'info>>,
 
-    /// From token account - None if sending SOL (will send from authority), else is Token Account
+    /// CHECK: From token account - None if sending SOL (will send from authority), else is Token Account
     #[account(mut)]
-    pub from_token_account: Option<Account<'info, TokenAccount>>,
-    /// Referrer token account - None if receiving SOL (will send to treasury), else is Token Account
+    pub from_token_account: Option<AccountInfo<'info>>,
+    /// CHECK: Referrer token account - None if receiving SOL (will send to treasury), else is Token Account
     #[account(mut)]
-    pub referrer_token_account: Option<Account<'info, TokenAccount>>,
+    pub referrer_token_account: Option<AccountInfo<'info>>,
 
     /// CHECK: Global referrer treasury (treasury of the global referrer of current referee).
     #[account(mut)]
-    pub global_referrer_treasury: UncheckedAccount<'info>,
+    pub global_referrer_treasury: AccountInfo<'info>,
     /// CHECK: Global referrer treasury for reward (treasury of the global referrer of current referee that is linked to the current mint, could be same as ).
     #[account(mut)]
-    pub global_referrer_treasury_for_reward: UncheckedAccount<'info>,
+    pub global_referrer_treasury_for_reward: AccountInfo<'info>,
 
     /// CHECK: Buddy Link Profile of the referee.
     #[account()]
-    pub referee_buddy_profile: UncheckedAccount<'info>,
+    pub referee_buddy_profile: AccountInfo<'info>,
     /// CHECK: Buddy Link Paid buddy of the referee (could be the same as above).
     #[account()]
-    pub referee_buddy: UncheckedAccount<'info>,
+    pub referee_buddy: AccountInfo<'info>,
 }
 
-pub fn transfer_checked_global_only_reward(
-    ctx: Context<TransferCheckedGlobalOnlyReward>,
+pub fn transfer_checked_global_only_reward<'info>(
+    ctx: CpiContext<'_, '_, '_, 'info, TransferCheckedGlobalOnlyReward<'info>>,
     amount: u64,
     transfer_signer_seeds: &[&[&[u8]]],
 ) -> ProgramResult {

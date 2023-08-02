@@ -4,6 +4,10 @@ description = "Library to interact with the BuddyLink on-chain referral system"
 version = "0.1.0"
 edition = "2021"
 
+[lib]
+name = "buddy_link"
+path = "src/lib.rs"
+
 [features]
 mainnet = []
 devnet = []
@@ -11,5 +15,14 @@ devnet = []
 [dependencies]
 anchor-lang = { version = "0.27.0" }
 anchor-spl = "0.27.0"
-solana-program = { version = "1.14.17" }
+solana-program = { version = "=1.14.17" }
 borsh = "0.10.3"
+
+[dev-dependencies]
+solana-client = "=1.14.17"
+solana-sdk = "=1.14.17"
+lazy_static = "1.4.0"
+
+[[test]]
+name = "test_validate"
+path = "src/tests/test_validate.rs"

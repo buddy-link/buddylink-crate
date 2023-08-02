@@ -1,9 +1,8 @@
-use crate::constants::constants::BL_PROGRAM_ID;
+use crate::constants::BL_PROGRAM_ID;
 use crate::instruction;
 use crate::utils::{get_account_info_or_default, get_key_or_none};
 use anchor_lang::prelude::*;
 use anchor_lang::{Accounts, Key, ToAccountInfo};
-use anchor_spl::token::Mint;
 use solana_program::entrypoint::ProgramResult;
 use solana_program::program::invoke;
 
@@ -11,44 +10,46 @@ use solana_program::program::invoke;
 pub struct ValidateReferrer<'info> {
     /// CHECK: The buddylink program
     #[account(executable, address = BL_PROGRAM_ID)]
-    pub buddy_link_program: UncheckedAccount<'info>,
+    pub buddy_link_program: AccountInfo<'info>,
 
+    /// CHECK: Payer of the transaction
+    #[account(mut, signer)]
+    pub payer: AccountInfo<'info>,
+    /// CHECK: Authority
     #[account(mut)]
-    pub payer: Signer<'info>,
-    #[account()]
-    pub authority: SystemAccount<'info>,
+    pub authority: AccountInfo<'info>,
 
     /// CHECK: Buddy Link Profile of the referee.
     #[account()]
-    pub referee_buddy_profile: UncheckedAccount<'info>,
+    pub referee_buddy_profile: AccountInfo<'info>,
     /// CHECK: Buddy Link Paid buddy of the referee (could be the same as above).
     #[account()]
-    pub referee_buddy: UncheckedAccount<'info>,
+    pub referee_buddy: AccountInfo<'info>,
     /// CHECK: Referee treasury (is owned by above).
     #[account(mut)]
-    pub referee_treasury: UncheckedAccount<'info>,
+    pub referee_treasury: AccountInfo<'info>,
     /// CHECK: Referee member (account of the referee within your organization).
     #[account()]
-    pub referee_member: UncheckedAccount<'info>,
+    pub referee_member: AccountInfo<'info>,
 
     /// CHECK: Referrer member (account of the referrer within your organization) (if you want to validate the referrer of the current referee).
     #[account()]
-    pub referrer_member: Option<UncheckedAccount<'info>>,
+    pub referrer_member: Option<AccountInfo<'info>>,
     /// CHECK: Referrer treasury (treasury that owns the referrer member ) (if you want to validate the referrer of the current referee).
     #[account()]
-    pub referrer_treasury: Option<UncheckedAccount<'info>>,
+    pub referrer_treasury: Option<AccountInfo<'info>>,
     /// CHECK: Referrer treasury for reward (treasury that is linked to the current mint, could be the same as above) (if you want to validate the referrer of the current referee).
     #[account()]
-    pub referrer_treasury_for_reward: Option<UncheckedAccount<'info>>,
+    pub referrer_treasury_for_reward: Option<AccountInfo<'info>>,
     /// CHECK: Token account linked to the mint (if you want to validate the referral tree with a specific mint)
     #[account()]
-    pub referrer_token_account: Option<UncheckedAccount<'info>>,
-
+    pub referrer_token_account: Option<AccountInfo<'info>>,
+    /// CHECK: The mint
     #[account()]
-    pub mint: Option<Account<'info, Mint>>,
+    pub mint: Option<AccountInfo<'info>>,
 }
 
-pub fn validate_referrer(ctx: Context<ValidateReferrer>) -> ProgramResult {
+pub fn validate_referrer<'info>(ctx: CpiContext<'_, '_, '_, 'info, ValidateReferrer<'info>>) -> ProgramResult {
     let instruction = instruction::validate_referrer(
         ctx.accounts.payer.key(),
         ctx.accounts.authority.key(),
