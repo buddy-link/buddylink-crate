@@ -3,6 +3,7 @@ name = "buddy-link"
 description = "Library to interact with the BuddyLink on-chain referral system"
 version = "0.1.0"
 edition = "2021"
+license = "MIT"
 
 [lib]
 name = "buddy_link"
