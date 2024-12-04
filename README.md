@@ -57,6 +57,7 @@ buddy_link::cpi::transfer_checked_global_only_reward(
     &[],
 )
 ```
+
 ## How to test
 
 1. yarn install
